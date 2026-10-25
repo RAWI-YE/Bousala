@@ -4,18 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>شبكة البوصلة | منصة إخبارية وتحليلية شاملة</title>
-  
+
   <meta id="meta-desc" name="description" content="شبكة البوصلة — منصة إخبارية وتحليلية شاملة تندرج تحت مظلة مؤسسة RAWI-YE.COM الإعلامية الرقمية">
   <link id="canonical-link" rel="canonical" href="https://networkbawsala.rawi-ye.com/">
 
-  <!-- وسوم المشاركة الاجتماعية الذكية (Open Graph) - صورة الغلاف الافتراضية هنا -->
+  <!-- وسوم المشاركة الاجتماعية والفهرسة (Open Graph & Twitter Cards) -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="شبكة البوصلة">
   <meta id="og-url" property="og:url" content="https://networkbawsala.rawi-ye.com/">
   <meta id="og-title" property="og:title" content="شبكة البوصلة">
   <meta id="og-desc" property="og:description" content="منصة إخبارية وتحليلية شاملة تندرج تحت مظلة مؤسسة RAWI-YE.COM الإعلامية الرقمية">
   <meta id="og-image" property="og:image" content="https://networkbawsala.rawi-ye.com/cover.jpg">
-  
+
   <meta name="twitter:card" content="summary_large_image">
   <meta id="twitter-title" name="twitter:title" content="شبكة البوصلة">
   <meta id="twitter-desc" name="twitter:description" content="منصة إخبارية وتحليلية شاملة">
@@ -25,77 +25,67 @@
   <link id="dynamic-favicon" rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
   <link id="apple-favicon" rel="apple-touch-icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
 
-  <!-- الخطوط العربية الرسمية ومكتبة أيقونات جوجل العالمية -->
+  <!-- الخطوط العربية الرسمية ومكتبة الأيقونات العالمية -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,1,0" rel="stylesheet">
 
-  <!-- ملف التصميم النهاري الصحفي -->
+  <!-- ملف التصميم الكلاسيكي -->
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
-  <!-- ==================== 1. شريط الطقس النحيف ==================== -->
-  <div id="weather-micro-bar" class="weather-micro-bar">
-    <div class="container weather-inner">
-      <span class="weather-badge">
-        <span class="material-symbols-rounded" translate="no">partly_cloudy_day</span>
-        <span>طقس المدن</span>
-      </span>
-      <div id="weather-cities-track" class="weather-track">
-        <!-- سيتم جلب بيانات الطقس هنا برمجياً بأيقونات نظيفة -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== 2. الترويسة العلوية ==================== -->
+  <!-- ==================== 1. الترويسة الكلاسيكية الصلبة (BBC Style Header) ==================== -->
   <header class="site-header">
-    <div class="container header-main-row">
-      <div class="header-right">
-        <button type="button" id="open-sidebar-btn" class="icon-btn" aria-label="القائمة الجانبية">
-          <span class="material-symbols-rounded" translate="no">menu</span>
-        </button>
+    <!-- الصف العلوي: الشعار وأدوات البحث والقائمة -->
+    <div class="header-top-bar">
+      <div class="container header-main-row">
+        <div class="header-right">
+          <button type="button" id="open-sidebar-btn" class="icon-btn" aria-label="القائمة">
+            <span class="material-symbols-rounded" translate="no">menu</span>
+          </button>
 
-        <a href="./" id="home-brand-link" class="brand-identity">
-          <div id="default-brand-mark" class="brand-mark-squircle">
-            <span class="material-symbols-rounded" translate="no">explore</span>
-          </div>
-          <!-- تم إزالة الشفافية المخفية، لتظهر الصورة بمجرد تحميلها -->
-          <img id="custom-logo-img" class="brand-logo hidden" src="" alt="شبكة البوصلة">
-          <div id="brand-text-wrap" class="brand-text-wrap">
-            <span id="ui-site-name" class="brand-title">شبكة البوصلة</span>
-            <span id="ui-network-name" class="brand-subtitle">RAWI-YE.COM</span>
-          </div>
-        </a>
-      </div>
+          <a href="./" id="home-brand-link" class="brand-identity">
+            <div id="default-brand-mark" class="brand-mark-box">
+              <span class="material-symbols-rounded" translate="no">explore</span>
+            </div>
+            <img id="custom-logo-img" class="brand-logo hidden" src="" alt="شبكة البوصلة">
+            <div id="brand-text-wrap" class="brand-text-wrap">
+              <span id="ui-site-name" class="brand-title">شبكة البوصلة</span>
+              <span id="ui-network-name" class="brand-subtitle">RAWI-YE.COM</span>
+            </div>
+          </a>
+        </div>
 
-      <nav class="desktop-quick-nav" aria-label="التنقل الرئيسي">
-        <button type="button" class="desk-nav-link active" data-nav-target="home">
-          <span class="material-symbols-rounded" translate="no">home</span>
-          <span>الرئيسية</span>
-        </button>
-        <button type="button" class="desk-nav-link" data-nav-target="compasses">
-          <span class="material-symbols-rounded" translate="no">explore</span>
-          <span>قسم البوصلة</span>
-        </button>
-        <button type="button" class="desk-nav-link" data-nav-target="authors">
-          <span class="material-symbols-rounded" translate="no">stylus_note</span>
-          <span>أقلام الصحيفة</span>
-        </button>
-      </nav>
-
-      <div class="header-left">
-        <button type="button" id="search-toggle-btn" class="icon-btn" title="البحث الذكي" aria-label="البحث">
-          <span class="material-symbols-rounded" translate="no">search</span>
-        </button>
+        <div class="header-left">
+          <button type="button" class="header-text-btn" data-nav-target="authors">
+            <span class="material-symbols-rounded" translate="no">stylus_note</span>
+            <span>أقلام الصحيفة</span>
+          </button>
+          <button type="button" id="search-toggle-btn" class="icon-btn" title="البحث في الموقع" aria-label="البحث">
+            <span class="material-symbols-rounded" translate="no">search</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- درج البحث الذكي -->
+    <!-- شريط الأقسام الأفقي الكلاسيكي (BBC Navigation Strip) -->
+    <nav class="category-nav-bar" aria-label="أقسام الموقع">
+      <div class="container">
+        <ul id="top-categories-list" class="category-nav-list">
+          <li>
+            <button type="button" class="cat-nav-item active" data-compass-nav="all">الرئيسية</button>
+          </li>
+          <!-- يتم إدراج الأقسام المعتمدة هنا تلقائياً -->
+        </ul>
+      </div>
+    </nav>
+
+    <!-- شريط البحث المنسدل -->
     <div id="search-drawer" class="search-drawer hidden">
       <div class="container search-drawer-inner">
-        <span class="material-symbols-rounded search-icon" translate="no">manage_search</span>
+        <span class="material-symbols-rounded search-icon" translate="no">search</span>
         <input type="search" id="global-search-input" class="search-input" placeholder="ابحث في الأخبار، التقارير، الكتّاب، أو الوسوم (#)...">
         <span id="search-count-badge" class="search-count-pill hidden">0</span>
         <button type="button" id="close-search-btn" class="icon-btn sm-btn" title="إغلاق">
@@ -105,12 +95,12 @@
     </div>
   </header>
 
-  <!-- ==================== 3. القائمة الجانبية ==================== -->
+  <!-- ==================== 2. القائمة الجانبية (Sidebar) ==================== -->
   <div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
   <aside id="sidebar-drawer" class="sidebar-drawer" aria-label="القائمة الجانبية">
     <div class="sidebar-header">
       <div class="sidebar-brand">
-        <div id="sidebar-default-mark" class="brand-mark-squircle sm-mark">
+        <div id="sidebar-default-mark" class="brand-mark-box sm-mark">
           <span class="material-symbols-rounded" translate="no">explore</span>
         </div>
         <img id="sidebar-logo-img" class="sidebar-logo hidden" src="" alt="شعار">
@@ -122,8 +112,8 @@
     </div>
 
     <div class="sidebar-body">
-      <div class="sidebar-section-label">التنقل السريع</div>
-      <ul class="sidebar-menu-list" style="margin-bottom: 14px;">
+      <div class="sidebar-section-label">التصفح السريع</div>
+      <ul class="sidebar-menu-list" style="margin-bottom: 16px;">
         <li>
           <button type="button" class="sidebar-menu-btn" id="side-nav-authors-btn">
             <span class="side-btn-content">
@@ -137,14 +127,14 @@
           <button type="button" class="sidebar-menu-btn" id="side-nav-compasses-btn">
             <span class="side-btn-content">
               <span class="material-symbols-rounded" translate="no">grid_view</span>
-              <span>دليل البوصلات الشامل</span>
+              <span>جميع الأقسام والبوصلات</span>
             </span>
             <span class="material-symbols-rounded side-arrow" translate="no">chevron_left</span>
           </button>
         </li>
       </ul>
 
-      <div class="sidebar-section-label">بوصلات الشبكة التخصصية</div>
+      <div class="sidebar-section-label">الأقسام الإخبارية</div>
       <ul id="sidebar-menu-list" class="sidebar-menu-list"></ul>
     </div>
 
@@ -153,7 +143,7 @@
     </div>
   </aside>
 
-  <!-- ==================== 4. شريط الأخبار العاجلة ==================== -->
+  <!-- ==================== 3. شريط الأخبار العاجلة الكلاسيكي ==================== -->
   <section id="breaking-ticker-wrap" class="breaking-ticker-wrap hidden" aria-live="polite">
     <div class="container breaking-inner">
       <div class="breaking-badge">
@@ -173,25 +163,25 @@
     </div>
   </section>
 
-  <!-- ==================== 5. لافتة البوصلة النشطة ==================== -->
+  <!-- ==================== 4. ترويسة القسم المختار أو الوسم ==================== -->
   <section id="active-compass-banner" class="active-compass-banner hidden">
     <div class="container">
-      <div id="compass-thematic-card" class="compass-thematic-card compass-pattern-bg">
+      <div id="compass-thematic-card" class="compass-thematic-card">
         <div class="compass-banner-top">
           <div class="compass-identity-row">
             <img id="active-compass-flag" class="compass-flag-img hidden" src="" alt="">
-            <div id="active-compass-icon-box" class="compass-icon-squircle">
+            <div id="active-compass-icon-box" class="compass-icon-box">
               <span id="active-compass-icon" class="material-symbols-rounded" translate="no">explore</span>
             </div>
             <div>
-              <span class="compass-kicker">البوصلة التخصصية</span>
-              <h1 id="active-compass-title" class="compass-main-heading">بوصلة السياسة اليمنية</h1>
+              <span class="compass-kicker">القسم الإخباري</span>
+              <h1 id="active-compass-title" class="compass-main-heading"></h1>
               <p id="active-compass-desc" class="compass-sub-desc"></p>
             </div>
           </div>
           <button type="button" id="clear-compass-filter-btn" class="compass-reset-btn">
             <span class="material-symbols-rounded" translate="no">close</span>
-            <span>العودة للكل</span>
+            <span>العودة للرئيسية</span>
           </button>
         </div>
 
@@ -200,74 +190,71 @@
     </div>
   </section>
 
-  <!-- موضع الإعلانات الزجاجية -->
+  <!-- موضع الإعلان العلوي -->
   <div class="container">
     <div id="ad-slot-top" class="ad-slot-wrapper"></div>
   </div>
 
-  <!-- ==================== 6. مساحة العرض الرئيسية ==================== -->
+  <!-- ==================== 5. مساحة العرض الرئيسية ==================== -->
   <main class="container main-workspace">
 
-    <!-- الواجهة 1: الصفحة الرئيسية -->
+    <!-- الواجهة (1): الصفحة الرئيسية -->
     <section id="view-home" class="view-section">
-      <!-- التغطية الرئيسية -->
+      <!-- الخبر الرئيسي البارز (BBC Top Story) -->
       <div id="hero-section" class="hero-section"></div>
 
-      <!-- شريط الكتّاب الأفقي (أقلام الصحيفة) -->
+      <!-- شريط كتّاب وأقلام الصحيفة -->
       <div id="authors-ribbon-section" class="authors-ribbon-card hidden">
         <div class="ribbon-header">
           <div class="ribbon-title-group">
             <span class="material-symbols-rounded ribbon-icon" translate="no">stylus_note</span>
             <div>
-              <h2 class="ribbon-title">أقلام الصحيفة وكتّاب البوصلة</h2>
-              <p class="ribbon-subtitle">تصفح مقالات وتحليلات نخبة الكتّاب والصحفيين</p>
+              <h2 class="ribbon-title">أقلام الصحيفة وكتّاب الرأي</h2>
+              <p class="ribbon-subtitle">مقالات وتحليلات نخبة الكتّاب والصحفيين المعتمدين</p>
             </div>
           </div>
           <button type="button" id="open-all-authors-btn" class="pill-outline-btn">
-            <span class="material-symbols-rounded" translate="no">person_search</span>
-            <span>البحث في الكتّاب</span>
+            <span>جميع الكتّاب</span>
+            <span class="material-symbols-rounded" translate="no">chevron_left</span>
           </button>
         </div>
         <div id="authors-ribbon-track" class="authors-ribbon-track"></div>
       </div>
 
+      <!-- تخطيط الصفحة الرئيسية (الأخبار + العمود الجانبي) -->
       <div class="home-layout-grid">
-        <!-- عمود الأخبار -->
         <div class="feed-main-col">
           <div class="section-heading-row">
-            <div class="heading-title-wrap">
-              <span class="heading-accent-dot"></span>
-              <h2 id="feed-heading" class="section-title">أحدث التحليلات والتقارير</h2>
-            </div>
+            <h2 id="feed-heading" class="section-title">أحدث الأخبار والتقارير</h2>
             <button type="button" id="open-compasses-shortcut" class="pill-outline-btn">
-              <span class="material-symbols-rounded" translate="no">explore</span>
-              <span>قسم البوصلة</span>
+              <span class="material-symbols-rounded" translate="no">grid_view</span>
+              <span>كل الأقسام</span>
             </button>
           </div>
 
           <div id="posts-grid" class="posts-grid">
             <div id="loading-skeleton" class="skeleton-card">
-              <span>جاري تحميل أحدث المواد الصحفية...</span>
+              <span>جاري تحميل المواد الصحفية...</span>
             </div>
           </div>
         </div>
 
-        <!-- العمود الجانبي -->
+        <!-- العمود الجانبي الكلاسيكي -->
         <aside class="feed-side-col">
-          <div id="quick-news-widget" class="widget-card" style="margin-bottom: 18px;">
+          <div id="quick-news-widget" class="widget-card" style="margin-bottom: 20px;">
             <div class="widget-header">
               <span class="material-symbols-rounded widget-icon red-icon" translate="no">bolt</span>
-              <h3 class="widget-title">نبض الأخبار السريعة</h3>
+              <h3 class="widget-title">الأخبار السريعة</h3>
             </div>
             <div id="quick-news-sidebar-list" class="quick-news-list">
-              <div class="empty-hint">لا توجد أخبار سريعة نشطة حالياً.</div>
+              <div class="empty-hint">لا توجد أخبار سريعة حالياً.</div>
             </div>
           </div>
 
           <div class="widget-card trending-widget">
             <div class="widget-header">
               <span class="material-symbols-rounded widget-icon" translate="no">trending_up</span>
-              <h3 class="widget-title">الأكثر قراءة في البوصلة</h3>
+              <h3 class="widget-title">الأكثر قراءة</h3>
             </div>
             <div id="trending-list" class="trending-list"></div>
           </div>
@@ -275,42 +262,29 @@
       </div>
     </section>
 
-    <!-- الواجهة 2: قسم البوصلة الشامل -->
+    <!-- الواجهة (2): دليل الأقسام الشامل -->
     <section id="view-compasses" class="view-section hidden">
-      <div class="hub-hero-header compass-pattern-bg">
-        <div class="hub-hero-content">
-          <span class="badge-pill">
-            <span class="material-symbols-rounded" translate="no" style="font-size:16px;">explore</span>
-            <span>توجيه ذكي للمحتوى</span>
-          </span>
-          <h1 class="hub-title">قسم البوصلة التخصصي</h1>
-          <p class="hub-subtitle">اختر البوصلة التي تهمك لتخصيص الواجهة بالنقوش الهندسية والفئات الدقيقة</p>
-        </div>
+      <div class="hub-hero-header">
+        <h1 class="hub-title">أقسام وبوصلات الشبكة</h1>
+        <p class="hub-subtitle">اختر القسم لتصفح كافة الأخبار والتقارير والفئات الفرعية المرتبطة به</p>
       </div>
       <div id="compasses-hub-grid" class="compasses-hub-grid"></div>
     </section>
 
-    <!-- الواجهة 3: دليل أقلام الصحيفة الموسع -->
+    <!-- الواجهة (3): دليل الكتّاب وأقلام الصحيفة -->
     <section id="view-authors" class="view-section hidden">
       <div class="hub-hero-header">
-        <div class="hub-hero-content">
-          <span class="badge-pill">
-            <span class="material-symbols-rounded" translate="no" style="font-size:16px;">stylus_note</span>
-            <span>هيئة التحرير والكتّاب</span>
-          </span>
-          <h1 class="hub-title">أقلام الصحيفة وكتّاب البوصلة</h1>
-          <p class="hub-subtitle">نخبة من الكتّاب والمحللين والصحفيين المعتمدين في مختلف المجالات</p>
-        </div>
-
+        <h1 class="hub-title">أقلام الصحيفة وهيئة التحرير</h1>
+        <p class="hub-subtitle">نخبة من الكتّاب والمحللين والصحفيين المعتمدين في شبكة البوصلة</p>
         <div class="authors-search-bar">
           <span class="material-symbols-rounded" translate="no">search</span>
-          <input type="search" id="authors-smart-search" class="search-input" placeholder="ابحث عن كاتب بالاسم، التخصص، أو ابحث في المقالات...">
+          <input type="search" id="authors-smart-search" class="search-input" placeholder="ابحث عن كاتب بالاسم أو التخصص...">
         </div>
       </div>
       <div id="authors-directory-grid" class="authors-directory-grid"></div>
     </section>
 
-    <!-- الواجهة 4: قارئ المقال -->
+    <!-- الواجهة (4): صفحة قراءة المقال الكلاسيكية (Article Reader) -->
     <section id="view-article" class="view-section hidden">
       <div class="article-reader-card">
         <div class="reader-top-nav">
@@ -342,32 +316,28 @@
           </div>
         </div>
 
-        <!-- الوسائط والنص -->
+        <!-- الصورة البارزة أو الفيديو -->
         <div id="art-media-slot" class="article-media-slot"></div>
+
+        <!-- نص المقال -->
         <div id="art-body" class="article-body-content"></div>
 
         <!-- الوسوم -->
         <div class="article-tags-section">
-          <span class="tags-label">
-            <span class="material-symbols-rounded" translate="no" style="font-size:17px;vertical-align:middle;">sell</span>
-            <span>الوسوم المرتبطة (اضغط لتصفح الوسم):</span>
-          </span>
+          <span class="tags-label">الموضوعات والوسوم المرتبطة:</span>
           <div id="art-tags" class="tags-row"></div>
         </div>
 
-        <!-- صندوق المشاركة الفائقة -->
+        <!-- أزرار مشاركة المقال -->
         <div id="super-share-box" class="super-share-box">
           <div class="share-box-header">
-            <div class="share-title-block">
-              <span class="material-symbols-rounded share-lead-icon" translate="no">share</span>
-              <div>
-                <h4>شارك هذا التقرير مع شبكتك</h4>
-                <p>مشاركة احترافية مع ملخص الخبر والوسوم والرابط المباشر</p>
-              </div>
+            <div>
+              <h4>مشاركة هذا الخبر</h4>
+              <p>شارك الخبر عبر منصات التواصل الاجتماعي أو انسخ الرابط المباشر</p>
             </div>
             <button type="button" id="share-native-btn" class="primary-share-btn">
-              <span class="material-symbols-rounded" translate="no">ios_share</span>
-              <span>مشاركة فورية مع الصورة</span>
+              <span class="material-symbols-rounded" translate="no">share</span>
+              <span>مشاركة الخبر</span>
             </button>
           </div>
 
@@ -382,7 +352,7 @@
             </button>
             <button type="button" id="share-x" class="social-share-pill">
               <span class="material-symbols-rounded" translate="no">tag</span>
-              <span>منصة إكس</span>
+              <span>منصة X</span>
             </button>
             <button type="button" id="share-fb" class="social-share-pill">
               <span class="material-symbols-rounded" translate="no">public</span>
@@ -397,15 +367,15 @@
       </div>
 
       <div class="related-section">
-        <h3 class="section-title" style="margin-bottom: 14px;">مواد وتقارير ذات صلة</h3>
+        <h3 class="section-title" style="margin-bottom: 16px;">أخبار وتقارير ذات صلة</h3>
         <div id="related-grid" class="posts-grid"></div>
       </div>
     </section>
 
-    <!-- الواجهة 5: الملف الشخصي للكاتب -->
+    <!-- الواجهة (5): صفحة الكاتب ومقالاته -->
     <section id="view-author" class="view-section hidden">
       <div class="author-profile-card">
-        <button type="button" id="author-back-btn" class="pill-outline-btn" style="margin-bottom: 18px;">
+        <button type="button" id="author-back-btn" class="pill-outline-btn" style="margin-bottom: 16px;">
           <span class="material-symbols-rounded" translate="no">arrow_forward</span>
           <span>العودة للرئيسية</span>
         </button>
@@ -415,7 +385,7 @@
           <div class="author-profile-details">
             <div class="author-name-line">
               <h1 id="profile-author-name"></h1>
-              <span id="profile-author-verified" class="verified-badge hidden" translate="no" title="موثق بالشارة الزرقاء">verified</span>
+              <span id="profile-author-verified" class="verified-badge hidden" translate="no" title="صحفي موثق">verified</span>
             </div>
             <p id="profile-author-job" class="author-job-badge"></p>
             <p id="profile-author-bio" class="author-bio-paragraph"></p>
@@ -431,14 +401,14 @@
         </div>
       </div>
 
-      <h3 class="section-title" style="margin: 22px 0 14px;">مقالات وتقارير الكاتب</h3>
+      <h3 class="section-title" style="margin: 24px 0 14px;">جميع مقالات الكاتب</h3>
       <div id="author-posts-grid" class="posts-grid"></div>
     </section>
 
-    <!-- الواجهة 6: الصفحات الثابتة -->
+    <!-- الواجهة (6): الصفحات الثابتة (من نحن، الميثاق، الخصوصية) -->
     <section id="view-static" class="view-section hidden">
       <div class="article-reader-card">
-        <button type="button" id="static-back-btn" class="pill-outline-btn" style="margin-bottom: 18px;">
+        <button type="button" id="static-back-btn" class="pill-outline-btn" style="margin-bottom: 16px;">
           <span class="material-symbols-rounded" translate="no">arrow_forward</span>
           <span>العودة للرئيسية</span>
         </button>
@@ -450,12 +420,12 @@
 
   </main>
 
-  <!-- ==================== 7. التذييل الرسمي ==================== -->
+  <!-- ==================== 6. التذييل الكلاسيكي الرسمي (Footer) ==================== -->
   <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-brand-col">
         <div class="footer-brand-row">
-          <div id="footer-default-mark" class="brand-mark-squircle sm-mark">
+          <div id="footer-default-mark" class="brand-mark-box sm-mark">
             <span class="material-symbols-rounded" translate="no">explore</span>
           </div>
           <img id="footer-logo-img" class="footer-logo hidden" src="" alt="شعار">
@@ -477,27 +447,7 @@
     </div>
   </footer>
 
-  <!-- ==================== 8. الشريط السفلي العائم ==================== -->
-  <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="التنقل السفلي">
-    <button type="button" class="mob-nav-btn active" data-action="home">
-      <span class="material-symbols-rounded" translate="no">home</span>
-      <span>الرئيسية</span>
-    </button>
-    <button type="button" class="mob-nav-btn" data-action="compasses">
-      <span class="material-symbols-rounded" translate="no">explore</span>
-      <span>البوصلة</span>
-    </button>
-    <button type="button" class="mob-nav-btn" data-action="search">
-      <span class="material-symbols-rounded" translate="no">search</span>
-      <span>البحث</span>
-    </button>
-    <button type="button" class="mob-nav-btn" data-action="quick">
-      <span class="material-symbols-rounded" translate="no">bolt</span>
-      <span>العواجل</span>
-    </button>
-  </nav>
-
-  <!-- شريط الإشعارات النصية (Toast) -->
+  <!-- إشعار نصي خفيف -->
   <div id="public-toast" class="public-toast hidden" role="status" aria-live="polite"></div>
 
   <!-- المحرك البرمجي -->
