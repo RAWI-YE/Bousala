@@ -39,7 +39,7 @@ const db = getFirestore(app);
 
 const SITE_BASE_URL = "https://networkbawsala.rawi-ye.com";
 
-// ==================== 2. البوصلات التخصصية المعتمدة (الأساسية والاحتياطية) ====================
+// ==================== 2. البوصلات التخصصية المعتمدة ====================
 const DEFAULT_COMPASSES = [
   {
     id: "yemen-politics",
@@ -127,7 +127,7 @@ const DEFAULT_COMPASSES = [
   }
 ];
 
-// ==================== 3. النصوص المؤسسية الرسمية (من نحن + الميثاق + الخصوصية) ====================
+// ==================== 3. النصوص المؤسسية الرسمية ====================
 const DEFAULT_ABOUT_HTML = `
   <p><strong>منصة إخبارية وتحليلية شاملة، تنبض بروح الوطن، وتؤمن بأن الكلمة أمانة والموقف مبدأ.</strong></p>
   <p>تندرج <strong>شبكة البوصلة</strong> تحت مظلة <strong>مؤسسة RAWI-YE.COM الإعلامية الرقمية</strong>، وهي مؤسسة إعلامية مهنية رائدة تضم عدة منصات نوعية متكاملة في رؤيتها ومستقلة في خطوطها التحريرية، من أبرزها "شبكة البوصلة" و"موسوعة الحجرية". ننطلق من رسالة إعلامية راسخة لتكون منصاتنا مساحة رحبة وموضوعية لكل الأقلام الحرة والمبدعة في مختلف المجالات؛ الثقافية، الفنية، التقنية، والتحليلات المعمقة، التزاماً منا بإثراء وعي القارئ العربي ومواكبة الحقيقة بمهنية ومصداقية عالية.</p>
@@ -154,17 +154,18 @@ const DEFAULT_CHARTER_HTML = `
 const DEFAULT_PRIVACY_HTML = `
   <p>تحترم <strong>شبكة البوصلة</strong> خصوصية كافة زوارها وقرّائها، وتلتزم بحماية البيانات وفق أعلى المعايير التقنية:</p>
   <p>• لا نقوم بجمع أي بيانات شخصية عن الزوار أثناء تصفح الأخبار والمقالات.</p>
-  <p>• تُستخدم الإشعارات الفورية فقط لمن يوافق عليها اختيارياً لتلقي الأخبار العاجلة، ويمكن إلغاؤها في أي وقت من المتصفح.</p>
   <p>• جميع الوثائق المرفوعة من قِبل الصحفيين لأغراض التوثيق بالشارة الزرقاء (KYC) تُحفظ بشكل مشفر وسري ولا يطلع عليها سوى الإدارة العليا للمنصة.</p>
 `;
 
-// ==================== 4. الحالة العامة للتطبيق (Application State) ====================
+// ==================== 4. الحالة العامة للتطبيق ====================
 const state = {
   settings: {
     siteName: "شبكة البوصلة",
     networkName: "RAWI-YE.COM",
     siteDescription: "منصة إخبارية وتحليلية شاملة تندرج تحت مظلة مؤسسة RAWI-YE.COM الإعلامية الرقمية",
     logoUrl: "",
+    faviconUrl: "",
+    coverImageUrl: "",
     accentColor: "#1d4ed8",
     aboutHtml: DEFAULT_ABOUT_HTML,
     charterHtml: DEFAULT_CHARTER_HTML,
@@ -180,11 +181,10 @@ const state = {
   activeTag: "",
   searchQuery: "",
   breakingIndex: 0,
-  breakingTimer: null,
-  lastSeenBreakingId: localStorage.getItem("bawsala_last_breaking_id") || ""
+  breakingTimer: null
 };
 
-// ==================== 5. دوال مساعدة (Helpers) ====================
+// ==================== 5. دوال مساعدة ====================
 function escapeHtml(str = "") {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -223,7 +223,6 @@ function getPostTimestampMs(post) {
   return isNaN(parsed) ? 0 : parsed;
 }
 
-// التحقق مما إذا كان المنشور معتمداً للنشر العام (وليس مسودة أو قيد المراجعة)
 function isPostPublished(post) {
   if (!post) return false;
   if (post.status === "draft" || post.status === "review" || post.status === "pending" || post.status === "rejected") {
@@ -232,7 +231,6 @@ function isPostPublished(post) {
   return true;
 }
 
-// التحقق مما إذا كان الخبر العاجل لا يزال ضمن مدته الزمنية المحددة
 function isBreakingStillActive(post) {
   if (!post || !post.isBreaking) return false;
   const now = Date.now();
@@ -247,7 +245,6 @@ function isBreakingStillActive(post) {
   return true;
 }
 
-// استخراج كافة البوصلات المرتبطة بالمقال (يدعم البوصلات المتعددة)
 function getPostCompasses(post) {
   const list = [];
   if (Array.isArray(post.categories)) {
@@ -262,7 +259,6 @@ function getPostCompasses(post) {
   return list.length ? list : ["بوصلة السياسة اليمنية"];
 }
 
-// تحويل الروابط النصية والهاشتاجات داخل نص المقال إلى عناصر قابلة للنقر
 function enrichArticleContent(htmlContent = "") {
   if (!htmlContent) return "";
   const container = document.createElement("div");
@@ -293,7 +289,6 @@ function enrichArticleContent(htmlContent = "") {
     node.parentNode.replaceChild(span, node);
   });
 
-  // جعل كل الروابط الموجودة في المقال تفتح بشكل سليم
   container.querySelectorAll("a").forEach((a) => {
     const href = a.getAttribute("href") || "";
     if (href.startsWith("http")) {
@@ -305,11 +300,21 @@ function enrichArticleContent(htmlContent = "") {
   return container.innerHTML;
 }
 
-// ==================== 6. تحديث وسوم الفهرسة والمشاركة (SEO & Open Graph & JSON-LD) ====================
+// ==================== 6. تحديث وسوم الفهرسة وصورة الغلاف للمشاركة ====================
+function getDefaultCoverImage() {
+  return (
+    state.settings.coverImageUrl ||
+    state.settings.ogImageUrl ||
+    state.settings.logoUrl ||
+    `${SITE_BASE_URL}/cover.jpg`
+  );
+}
+
 function updateSeoMeta({ title, description, image, url, type = "website", publishedTime = "", authorName = "" }) {
-  const cleanTitle = title ? `${title} | ${state.settings.siteName}` : `${state.settings.siteName} | منصة إخبارية وتحليلية شاملة`;
+  const siteName = state.settings.siteName || "شبكة البوصلة";
+  const cleanTitle = title ? `${title} | ${siteName}` : siteName;
   const cleanDesc = (description || state.settings.siteDescription || "").replace(/<[^>]*>/g, "").slice(0, 170);
-  const cleanImg = image || state.settings.logoUrl || `${SITE_BASE_URL}/logo.png`;
+  const cleanImg = image || getDefaultCoverImage();
   const cleanUrl = url || window.location.href;
 
   document.title = cleanTitle;
@@ -329,7 +334,6 @@ function updateSeoMeta({ title, description, image, url, type = "website", publi
   setAttr("twitter-desc", "content", cleanDesc);
   setAttr("twitter-image", "content", cleanImg);
 
-  // حقن بيانات JSON-LD لمحركات بحث جوجل
   let ldScript = document.getElementById("json-ld-seo");
   if (!ldScript) {
     ldScript = document.createElement("script");
@@ -346,10 +350,10 @@ function updateSeoMeta({ title, description, image, url, type = "website", publi
         "description": cleanDesc,
         "image": [cleanImg],
         "datePublished": publishedTime || new Date().toISOString(),
-        "author": [{ "@type": "Person", "name": authorName || "شبكة البوصلة" }],
+        "author": [{ "@type": "Person", "name": authorName || siteName }],
         "publisher": {
           "@type": "Organization",
-          "name": "شبكة البوصلة — RAWI-YE.COM",
+          "name": `${siteName} — RAWI-YE.COM`,
           "logo": { "@type": "ImageObject", "url": cleanImg }
         },
         "mainEntityOfPage": { "@type": "WebPage", "@id": cleanUrl }
@@ -357,16 +361,17 @@ function updateSeoMeta({ title, description, image, url, type = "website", publi
     : {
         "@context": "https://schema.org",
         "@type": "NewsMediaOrganization",
-        "name": "شبكة البوصلة",
+        "name": siteName,
         "alternateName": "RAWI-YE.COM",
         "url": SITE_BASE_URL,
+        "image": cleanImg,
         "description": cleanDesc
       };
 
   ldScript.textContent = JSON.stringify(schemaData);
 }
 
-// ==================== 7. جلب الطقس اللحظي للمدن اليمنية والإقليمية ====================
+// ==================== 7. جلب الطقس اللحظي بأيقونات Google Material Symbols ====================
 async function initLiveWeatherTicker() {
   const track = document.getElementById("weather-cities-track");
   if (!track) return;
@@ -389,29 +394,33 @@ async function initLiveWeatherTicker() {
     const data = await res.json();
     const results = Array.isArray(data) ? data : [data];
 
-    const weatherIcon = (code) => {
-      if (code === 0) return "☀️";
-      if (code <= 3) return "⛅";
-      if (code <= 48) return "🌫️";
-      if (code <= 67) return "🌧️";
-      if (code <= 99) return "⛈️";
-      return "🌤️";
+    const weatherMaterialIcon = (code) => {
+      if (code === 0) return "wb_sunny";
+      if (code <= 3) return "partly_cloudy_day";
+      if (code <= 48) return "Cloud";
+      if (code <= 67) return "rainy";
+      if (code <= 99) return "thunderstorm";
+      return "wb_sunny";
     };
 
     track.innerHTML = cities
       .map((city, idx) => {
         const cw = results[idx] && results[idx].current_weather;
         const temp = cw ? Math.round(cw.temperature) : 26;
-        const icon = cw ? weatherIcon(cw.weathercode) : "☀️";
-        return `<span class="weather-item">${city.name} <strong>${temp}°</strong> ${icon}</span>`;
+        const iconName = cw ? weatherMaterialIcon(cw.weathercode) : "wb_sunny";
+        return `
+          <span class="weather-item">
+            <span class="material-symbols-rounded weather-mini-icon" translate="no">${iconName}</span>
+            <span>${city.name}</span>
+            <strong>${temp}°</strong>
+          </span>
+        `;
       })
       .join("");
-  } catch (_) {
-    // يحتفظ بالقيم الافتراضية الأنيقة عند ضعف الاتصال
-  }
+  } catch (_) {}
 }
 
-// ==================== 8. تطبيق الهوية البصرية والإعدادات السيادية ====================
+// ==================== 8. تطبيق الهوية البصرية والشعار وصورة الغلاف ====================
 function applySiteSettings() {
   const s = state.settings;
   const siteName = s.siteName || "شبكة البوصلة";
@@ -430,28 +439,49 @@ function applySiteSettings() {
     document.documentElement.style.setProperty("--accent", s.accentColor);
   }
 
-  // الشعار والأيقونة
-  const logoIds = ["custom-logo-img", "sidebar-logo-img", "footer-logo-img"];
-  logoIds.forEach((id) => {
-    const img = document.getElementById(id);
-    if (!img) return;
-    if (s.logoUrl) {
-      img.src = s.logoUrl;
-      img.classList.remove("hidden");
-      img.style.opacity = "1";
+  // إظهار الشعار المخصص أو الأيقونة الرسمية الافتراضية فوراً بدون إخفاء
+  const logoPairs = [
+    { imgId: "custom-logo-img", markId: "default-brand-mark" },
+    { imgId: "sidebar-logo-img", markId: "sidebar-default-mark" },
+    { imgId: "footer-logo-img", markId: "footer-default-mark" }
+  ];
+
+  logoPairs.forEach(({ imgId, markId }) => {
+    const imgEl = document.getElementById(imgId);
+    const markEl = document.getElementById(markId);
+    if (!imgEl) return;
+
+    if (s.logoUrl && s.logoUrl.trim() !== "") {
+      imgEl.src = s.logoUrl.trim();
+      imgEl.classList.remove("hidden");
+      if (markEl) markEl.classList.add("hidden");
+      imgEl.onerror = () => {
+        imgEl.classList.add("hidden");
+        if (markEl) markEl.classList.remove("hidden");
+      };
     } else {
-      img.classList.add("hidden");
+      imgEl.classList.add("hidden");
+      if (markEl) markEl.classList.remove("hidden");
     }
   });
 
-  if (s.logoUrl) {
+  // تحديث أيقونة المتصفح (Favicon)
+  const favUrl = (s.faviconUrl && s.faviconUrl.trim()) || (s.logoUrl && s.logoUrl.trim()) || "";
+  if (favUrl) {
     const fav = document.getElementById("dynamic-favicon");
     const appFav = document.getElementById("apple-favicon");
-    if (fav) fav.href = s.logoUrl;
-    if (appFav) appFav.href = s.logoUrl;
+    if (fav) fav.href = favUrl;
+    if (appFav) appFav.href = favUrl;
   }
 
-  // روابط التواصل الاجتماعي
+  // تحديث صورة الغلاف الافتراضية للمشاركة (OG Image)
+  updateSeoMeta({
+    title: "",
+    description: s.siteDescription,
+    image: getDefaultCoverImage(),
+    url: window.location.href
+  });
+
   renderSocialLinks("sidebar-social-links", s.socials);
   renderSocialLinks("footer-social-links", s.socials);
 }
@@ -460,11 +490,11 @@ function renderSocialLinks(containerId, socials = {}) {
   const wrap = document.getElementById(containerId);
   if (!wrap) return;
   const items = [
-    { key: "whatsapp", label: "واتساب", url: socials.whatsapp },
-    { key: "telegram", label: "تليجرام", url: socials.telegram },
-    { key: "x", label: "منصة X", url: socials.x || socials.twitter },
-    { key: "facebook", label: "فيسبوك", url: socials.facebook },
-    { key: "youtube", label: "يوتيوب", url: socials.youtube }
+    { label: "واتساب", url: socials.whatsapp },
+    { label: "تليجرام", url: socials.telegram },
+    { label: "منصة X", url: socials.x || socials.twitter },
+    { label: "فيسبوك", url: socials.facebook },
+    { label: "يوتيوب", url: socials.youtube }
   ].filter((i) => i.url && i.url.trim() !== "");
 
   wrap.innerHTML = items
@@ -529,7 +559,6 @@ function selectCompass(compassIdentifier, subcategory = "all") {
       if (iconEl) iconEl.textContent = comp.icon || "explore";
     }
 
-    // الفئات الفرعية داخل البوصلة
     const subs = Array.isArray(comp.subcategories) ? comp.subcategories : [];
     if (subs.length > 0 && subsBar) {
       subsBar.classList.remove("hidden");
@@ -579,7 +608,7 @@ function selectHashtag(tag) {
   if (banner) banner.classList.remove("hidden");
   if (flagImg) flagImg.classList.add("hidden");
   if (iconBox) iconBox.classList.remove("hidden");
-  if (iconEl) iconEl.textContent = "tag";
+  if (iconEl) iconEl.textContent = "sell";
   if (titleEl) titleEl.textContent = `#${cleanTag}`;
   if (descEl) descEl.textContent = `جميع الأخبار والتقارير المرتبطة بالوسم #${cleanTag}`;
   if (subsBar) subsBar.classList.add("hidden");
@@ -592,7 +621,7 @@ function selectHashtag(tag) {
   renderHomeFeed();
 }
 
-// ==================== 10. عرض قسم البوصلة (Compasses Hub) والقائمة الجانبية ====================
+// ==================== 10. عرض قسم البوصلة والقائمة الجانبية بأيقونات عالمية ====================
 function renderCompassesHub() {
   const grid = document.getElementById("compasses-hub-grid");
   if (!grid) return;
@@ -617,11 +646,11 @@ function renderCompassesHub() {
                 : `<div class="compass-icon-squircle" style="color:${comp.color || "#1d4ed8"};"><span class="material-symbols-rounded" translate="no">${comp.icon || "explore"}</span></div>`
             }
             <div>
-              <h3 style="font-size:1.1rem;font-weight:900;">${escapeHtml(comp.name)}</h3>
+              <h3 style="font-size:1.08rem;font-weight:900;">${escapeHtml(comp.name)}</h3>
               <span class="badge-pill" style="margin-top:4px;">${count} مادة منشورة</span>
             </div>
           </div>
-          <p style="font-size:0.86rem;color:var(--text-secondary);">${escapeHtml(comp.description || "")}</p>
+          <p style="font-size:0.85rem;color:var(--text-secondary);">${escapeHtml(comp.description || "")}</p>
           ${
             subs.length
               ? `<div class="compass-card-subs">${subs.map((s) => `<span class="sub-pill" style="font-size:0.74rem;padding:3px 10px;">${escapeHtml(s)}</span>`).join("")}</div>`
@@ -648,14 +677,22 @@ function renderSidebarMenu() {
   list.innerHTML = [
     `<li>
       <button type="button" class="sidebar-menu-btn ${state.activeCompassId === "all" ? "active" : ""}" data-side-compass="all">
-        <span>🏠 الرئيسية (كل البوصلات)</span>
+        <span class="side-btn-content">
+          <span class="material-symbols-rounded" translate="no">home</span>
+          <span>الرئيسية (كل البوصلات)</span>
+        </span>
+        <span class="material-symbols-rounded side-arrow" translate="no">chevron_left</span>
       </button>
     </li>`,
     ...compasses.map(
       (c) => `
       <li>
         <button type="button" class="sidebar-menu-btn ${state.activeCompassId === c.id || state.activeCompassId === c.name ? "active" : ""}" data-side-compass="${escapeHtml(c.id)}">
-          <span>🧭 ${escapeHtml(c.name)}</span>
+          <span class="side-btn-content">
+            <span class="material-symbols-rounded" translate="no">${c.icon || "explore"}</span>
+            <span>${escapeHtml(c.name)}</span>
+          </span>
+          <span class="material-symbols-rounded side-arrow" translate="no">chevron_left</span>
         </button>
       </li>`
     )
@@ -676,7 +713,6 @@ function renderBreakingAndQuickNews() {
   const activeBreaking = published.filter(isBreakingStillActive);
   const quickPosts = published.filter((p) => p.isQuickNews || isBreakingStillActive(p)).slice(0, 8);
 
-  // 1. الشريط الأحمر العاجل
   const tickerWrap = document.getElementById("breaking-ticker-wrap");
   const listEl = document.getElementById("breaking-list");
   const counterEl = document.getElementById("breaking-counter");
@@ -705,17 +741,8 @@ function renderBreakingAndQuickNews() {
         showCurrentBreaking();
       }, 5000);
     }
-
-    // إرسال إشعار متصفح إذا كان هناك عاجل جديد والمستخدم وافق على الإشعارات
-    const newest = activeBreaking[0];
-    if (newest && newest.id !== state.lastSeenBreakingId) {
-      state.lastSeenBreakingId = newest.id;
-      localStorage.setItem("bawsala_last_breaking_id", newest.id);
-      triggerBrowserNotification(newest);
-    }
   }
 
-  // 2. صندوق نبض الأخبار السريعة في العمود الجانبي
   const quickListEl = document.getElementById("quick-news-sidebar-list");
   if (quickListEl) {
     if (!quickPosts.length) {
@@ -725,8 +752,11 @@ function renderBreakingAndQuickNews() {
         .map(
           (q) => `
           <div class="quick-news-item" data-quick-id="${q.id}" style="cursor:pointer;">
-            <span class="quick-news-time">⚡ ${formatArabicDate(q.createdAt)}</span>
-            <strong>${escapeHtml(q.title)}</strong>
+            <span class="quick-news-time">
+              <span class="material-symbols-rounded" translate="no" style="font-size:14px;">bolt</span>
+              <span>${formatArabicDate(q.createdAt)}</span>
+            </span>
+            <strong style="display:block;">${escapeHtml(q.title)}</strong>
           </div>
         `
         )
@@ -760,12 +790,17 @@ function buildGlassAdHtml(ad) {
   if (ad.styleType === "leaderboard" && ad.imageUrl) {
     return `
       <div class="leaderboard-ad-banner" data-ad-box="${ad.id}">
-        <button type="button" class="glass-ad-close leaderboard-close-float" data-close-ad="${ad.id}" title="إخفاء الإعلان">×</button>
+        <button type="button" class="glass-ad-close leaderboard-close-float" data-close-ad="${ad.id}" title="إخفاء الإعلان">
+          <span class="material-symbols-rounded" translate="no" style="font-size:16px;">close</span>
+        </button>
         <a href="${escapeHtml(ad.targetUrl || "#")}" target="_blank" rel="noopener noreferrer" class="leaderboard-ad-link" data-click-ad="${ad.id}">
           <img src="${escapeHtml(ad.imageUrl)}" alt="${escapeHtml(ad.title)}" class="leaderboard-ad-img">
           <div class="leaderboard-ad-bar">
             <span><span class="glass-ad-tag">رعاية رسمية</span> ${escapeHtml(ad.title)}</span>
-            <span style="color:var(--accent);">زيارة الرابط ⬅</span>
+            <span style="color:var(--accent);display:inline-flex;align-items:center;gap:4px;">
+              <span>زيارة الرابط</span>
+              <span class="material-symbols-rounded" translate="no" style="font-size:16px;">open_in_new</span>
+            </span>
           </div>
         </a>
       </div>
@@ -782,7 +817,9 @@ function buildGlassAdHtml(ad) {
           <p class="glass-ad-sponsor">${escapeHtml(ad.sponsorName || "شركاء شبكة البوصلة")}</p>
         </div>
       </a>
-      <button type="button" class="glass-ad-close" data-close-ad="${ad.id}" title="إغفاء">×</button>
+      <button type="button" class="glass-ad-close" data-close-ad="${ad.id}" title="إغلاق">
+        <span class="material-symbols-rounded" translate="no" style="font-size:16px;">close</span>
+      </button>
     </div>
   `;
 }
@@ -806,7 +843,7 @@ function bindAdEvents(container, adId) {
   }
 }
 
-// ==================== 13. عرض الصفحة الرئيسية والبطاقات (بدون عداد مشاهدات) ====================
+// ==================== 13. بناء قائمة الكتّاب وشريط أقلام الصحيفة الأفقي ====================
 function findAuthorInfo(post) {
   const staffMatch = state.staff.find(
     (s) =>
@@ -825,6 +862,88 @@ function findAuthorInfo(post) {
   };
 }
 
+function getAllActiveAuthors() {
+  const published = state.posts.filter(isPostPublished);
+  const authorsMap = new Map();
+
+  state.staff.forEach((s) => {
+    if (s.suspended) return;
+    const key = (s.email || s.name || "").toLowerCase();
+    if (!key) return;
+    authorsMap.set(key, {
+      id: s.email || s.name,
+      name: s.name || "كاتب صحفي",
+      email: s.email || "",
+      jobTitle: s.jobTitle || "كاتب ومحرر في شبكة البوصلة",
+      bio: s.bio || "كاتب ومحلل مشارك في شبكة البوصلة الإخبارية.",
+      avatar: s.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || "كاتب")}&background=1d4ed8&color=fff`,
+      verified: Boolean(s.verified),
+      socials: s.socials || {}
+    });
+  });
+
+  published.forEach((p) => {
+    const key = (p.authorEmail || p.author || "").toLowerCase();
+    if (!key || authorsMap.has(key)) return;
+    authorsMap.set(key, {
+      id: p.authorEmail || p.author,
+      name: p.author || "هيئة التحرير",
+      email: p.authorEmail || "",
+      jobTitle: "كاتب ومحرر صحفي",
+      bio: "كاتب مشارك في شبكة البوصلة.",
+      avatar: p.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.author || "كاتب")}&background=1d4ed8&color=fff`,
+      verified: Boolean(p.authorVerified),
+      socials: {}
+    });
+  });
+
+  return Array.from(authorsMap.values()).map((a) => {
+    const writerPosts = published.filter(
+      (p) =>
+        (a.email && p.authorEmail && p.authorEmail.toLowerCase() === a.email.toLowerCase()) ||
+        p.author === a.name
+    );
+    return { ...a, postCount: writerPosts.length, posts: writerPosts };
+  });
+}
+
+function renderAuthorsHorizontalRibbon() {
+  const section = document.getElementById("authors-ribbon-section");
+  const track = document.getElementById("authors-ribbon-track");
+  if (!section || !track) return;
+
+  const authors = getAllActiveAuthors();
+  if (!authors.length) {
+    section.classList.add("hidden");
+    return;
+  }
+
+  section.classList.remove("hidden");
+  track.innerHTML = authors
+    .map(
+      (a) => `
+      <div class="author-ribbon-item" data-ribbon-author="${escapeHtml(a.id)}">
+        <div class="author-ribbon-avatar-wrap">
+          <img src="${escapeHtml(a.avatar)}" alt="${escapeHtml(a.name)}" class="author-ribbon-avatar" loading="lazy">
+          ${
+            a.verified
+              ? `<span class="material-symbols-rounded author-ribbon-verified" translate="no" title="صحفي موثق بالشارة الزرقاء">verified</span>`
+              : ""
+          }
+        </div>
+        <span class="author-ribbon-name">${escapeHtml(a.name)}</span>
+        <span class="author-ribbon-role">${escapeHtml(a.jobTitle)}</span>
+      </div>
+    `
+    )
+    .join("");
+
+  track.querySelectorAll("[data-ribbon-author]").forEach((item) => {
+    item.addEventListener("click", () => openAuthorProfile(item.getAttribute("data-ribbon-author")));
+  });
+}
+
+// ==================== 14. عرض الصفحة الرئيسية والبطاقات (بدون عداد مشاهدات) ====================
 function renderHomeFeed() {
   const heroWrap = document.getElementById("hero-section");
   const grid = document.getElementById("posts-grid");
@@ -832,9 +951,10 @@ function renderHomeFeed() {
   const trendWrap = document.getElementById("trending-list");
   if (!grid) return;
 
+  renderAuthorsHorizontalRibbon();
+
   let list = state.posts.filter(isPostPublished);
 
-  // فلترة حسب البوصلة المختارة (يدعم تعدد البوصلات للمقال الواحد)
   if (state.activeCompassId !== "all") {
     const comp = findCompass(state.activeCompassId);
     list = list.filter((p) => {
@@ -865,7 +985,6 @@ function renderHomeFeed() {
     if (heading) heading.textContent = "أحدث التحليلات والتقارير";
   }
 
-  // شارة عداد البحث
   const countBadge = document.getElementById("search-count-badge");
   if (countBadge) {
     if (state.searchQuery) {
@@ -876,7 +995,7 @@ function renderHomeFeed() {
     }
   }
 
-  // 1. بطاقة الواجهة الرئيسية (Hero Featured Post)
+  // بطاقة الواجهة الرئيسية (Hero)
   if (heroWrap) {
     const showHero = state.activeCompassId === "all" && !state.activeTag && !state.searchQuery && list.length > 0;
     if (!showHero) {
@@ -888,13 +1007,16 @@ function renderHomeFeed() {
       const primaryCompass = getPostCompasses(heroPost)[0];
       heroWrap.classList.remove("hidden");
       heroWrap.innerHTML = `
-        <article class="hero-card glass-surface" data-open-post="${heroPost.id}">
+        <article class="hero-card" data-open-post="${heroPost.id}">
           <div class="hero-img-wrap">
             <img src="${escapeHtml(heroPost.imageUrl || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1000&q=80")}" alt="${escapeHtml(heroPost.title)}">
           </div>
           <div class="hero-content">
             <div class="article-badges">
-              <span class="badge-pill">⭐ تغطية رئيسية</span>
+              <span class="badge-pill">
+                <span class="material-symbols-rounded" translate="no" style="font-size:15px;">verified_user</span>
+                <span>تغطية رئيسية</span>
+              </span>
               <span class="badge-pill">${escapeHtml(primaryCompass)}</span>
             </div>
             <h2 class="hero-title">${escapeHtml(heroPost.title)}</h2>
@@ -914,20 +1036,17 @@ function renderHomeFeed() {
     }
   }
 
-  // 2. شبكة المقالات (بدون أرقام مشاهدات)
+  // شبكة المقالات
   if (!list.length) {
-    grid.innerHTML = `<div class="skeleton-card glass-surface" style="grid-column: 1 / -1;">لا توجد مواد منشورة تطابق هذا الفلتر حالياً.</div>`;
+    grid.innerHTML = `<div class="skeleton-card" style="grid-column: 1 / -1;">لا توجد مواد منشورة تطابق هذا الفلتر حالياً.</div>`;
   } else {
-    grid.innerHTML = list
-      .map((post) => buildNewsCardHtml(post))
-      .join("");
-
+    grid.innerHTML = list.map((post) => buildNewsCardHtml(post)).join("");
     grid.querySelectorAll("[data-open-post]").forEach((card) => {
       card.addEventListener("click", () => openArticle(card.getAttribute("data-open-post")));
     });
   }
 
-  // 3. قائمة الأكثر قراءة في البوصلة (مرتبة حسب القراءة داخلياً ولكن بدون إظهار الرقم للجمهور)
+  // قائمة الأكثر قراءة (بدون إظهار الرقم للجمهور)
   if (trendWrap) {
     const topPosts = [...state.posts.filter(isPostPublished)]
       .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -956,7 +1075,7 @@ function buildNewsCardHtml(post) {
   const thumb = post.imageUrl || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80";
 
   return `
-    <article class="news-card glass-surface" data-open-post="${post.id}">
+    <article class="news-card" data-open-post="${post.id}">
       <div class="card-thumb-wrap">
         <img src="${escapeHtml(thumb)}" alt="${escapeHtml(post.title)}" loading="lazy">
         <span class="card-cat-float">${escapeHtml(compasses[0])}</span>
@@ -982,56 +1101,13 @@ function buildNewsCardHtml(post) {
   `;
 }
 
-// ==================== 14. عرض أقلام الصحيفة (دليل الكتّاب + البحث الذكي) ====================
+// ==================== 15. دليل أقلام الصحيفة الكامل والبحث الذكي ====================
 function renderAuthorsDirectory(filterText = "") {
   const grid = document.getElementById("authors-directory-grid");
   if (!grid) return;
 
-  const published = state.posts.filter(isPostPublished);
   const q = filterText.trim().toLowerCase();
-
-  // دمج الكتّاب المسجلين مع الكتّاب الذين لديهم مقالات منشورة
-  const authorsMap = new Map();
-
-  state.staff.forEach((s) => {
-    if (s.suspended) return;
-    const key = (s.email || s.name || "").toLowerCase();
-    if (!key) return;
-    authorsMap.set(key, {
-      id: s.email || s.name,
-      name: s.name || "كاتب صحفي",
-      email: s.email || "",
-      jobTitle: s.jobTitle || "كاتب ومحرر في شبكة البوصلة",
-      bio: s.bio || "كاتب ومحلل مشارك في شبكة البوصلة الإخبارية.",
-      avatar: s.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || "كاتب")}&background=1d4ed8&color=fff`,
-      verified: Boolean(s.verified),
-      socials: s.socials || {}
-    });
-  });
-
-  published.forEach((p) => {
-    const key = (p.authorEmail || p.author || "").toLowerCase();
-    if (!key || authorsMap.has(key)) return;
-    authorsMap.set(key, {
-      id: p.authorEmail || p.author,
-      name: p.author || "هيئة التحرير",
-      email: p.authorEmail || "",
-      jobTitle: "كاتب ومحرر في شبكة البوصلة",
-      bio: "كاتب مشارك في شبكة البوصلة.",
-      avatar: p.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.author || "كاتب")}&background=1d4ed8&color=fff`,
-      verified: Boolean(p.authorVerified),
-      socials: {}
-    });
-  });
-
-  let authorsList = Array.from(authorsMap.values()).map((a) => {
-    const writerPosts = published.filter(
-      (p) =>
-        (a.email && p.authorEmail && p.authorEmail.toLowerCase() === a.email.toLowerCase()) ||
-        p.author === a.name
-    );
-    return { ...a, postCount: writerPosts.length, posts: writerPosts };
-  });
+  let authorsList = getAllActiveAuthors();
 
   if (q) {
     authorsList = authorsList.filter((a) => {
@@ -1042,17 +1118,17 @@ function renderAuthorsDirectory(filterText = "") {
   }
 
   if (!authorsList.length) {
-    grid.innerHTML = `<div class="skeleton-card glass-surface" style="grid-column:1/-1;">لم يتم العثور على كتّاب مطابقين للبحث.</div>`;
+    grid.innerHTML = `<div class="skeleton-card" style="grid-column:1/-1;">لم يتم العثور على كتّاب مطابقين للبحث.</div>`;
     return;
   }
 
   grid.innerHTML = authorsList
     .map(
       (a) => `
-      <article class="author-dir-card glass-surface" data-author-id="${escapeHtml(a.id)}">
+      <article class="author-dir-card" data-author-id="${escapeHtml(a.id)}">
         <img src="${escapeHtml(a.avatar)}" alt="${escapeHtml(a.name)}" class="author-dir-avatar">
         <div style="display:flex;align-items:center;justify-content:center;gap:5px;">
-          <h3 style="font-size:1.08rem;font-weight:900;">${escapeHtml(a.name)}</h3>
+          <h3 style="font-size:1.05rem;font-weight:900;">${escapeHtml(a.name)}</h3>
           ${a.verified ? `<span class="verified-badge" translate="no" title="موثق بالشارة الزرقاء">verified</span>` : ""}
         </div>
         <p style="font-size:0.8rem;color:var(--accent);font-weight:800;margin:4px 0 8px;">${escapeHtml(a.jobTitle)}</p>
@@ -1125,7 +1201,7 @@ function openAuthorProfile(authorIdentifier) {
   const shareAuthorBtn = document.getElementById("share-author-profile-btn");
   if (shareAuthorBtn) {
     shareAuthorBtn.onclick = async () => {
-      const shareText = `✒️ صفحة الكاتب ${name} على شبكة البوصلة:\n${bio}\n${profileUrl}`;
+      const shareText = `صفحة الكاتب ${name} على شبكة البوصلة:\n${bio}\n${profileUrl}`;
       if (navigator.share) {
         try {
           await navigator.share({ title: name, text: shareText, url: profileUrl });
@@ -1138,9 +1214,10 @@ function openAuthorProfile(authorIdentifier) {
   }
 
   switchView("author");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// ==================== 15. فتح قارئ المقال الكامل + المشاركة الفائقة مع الصورة ====================
+// ==================== 16. قارئ المقال الكامل + المشاركة الفائقة ====================
 function openArticle(postId) {
   const post = state.posts.find((p) => p.id === postId);
   if (!post || !isPostPublished(post)) {
@@ -1148,17 +1225,21 @@ function openArticle(postId) {
     return;
   }
 
-  // زيادة عداد القراءات في قاعدة البيانات بصمت (يظهر للإدارة والكاتب فقط في غرفة العمليات)
   updateDoc(doc(db, "posts", postId), { views: increment(1) }).catch(() => {});
 
   const author = findAuthorInfo(post);
   const compasses = getPostCompasses(post);
 
-  // شارات البوصلات المتعددة
   const badgesEl = document.getElementById("art-badges");
   if (badgesEl) {
     badgesEl.innerHTML = compasses
-      .map((c) => `<button type="button" class="badge-pill" data-badge-compass="${escapeHtml(c)}" style="border:none;cursor:pointer;">🧭 ${escapeHtml(c)}</button>`)
+      .map(
+        (c) => `
+        <button type="button" class="badge-pill" data-badge-compass="${escapeHtml(c)}" style="border:none;cursor:pointer;">
+          <span class="material-symbols-rounded" translate="no" style="font-size:15px;">explore</span>
+          <span>${escapeHtml(c)}</span>
+        </button>`
+      )
       .join("");
     badgesEl.querySelectorAll("[data-badge-compass]").forEach((btn) => {
       btn.addEventListener("click", () => selectCompass(btn.getAttribute("data-badge-compass"), "all"));
@@ -1183,7 +1264,6 @@ function openArticle(postId) {
     authorBtn.onclick = () => openAuthorProfile(author.email || author.name);
   }
 
-  // الوسائط (فيديو أو صورة بارزة)
   const mediaSlot = document.getElementById("art-media-slot");
   if (mediaSlot) {
     if (post.videoUrl && post.videoUrl.includes("youtube")) {
@@ -1196,7 +1276,6 @@ function openArticle(postId) {
     }
   }
 
-  // محتوى المقال مع تفعيل النقر على الروابط والهاشتاجات
   const bodyEl = document.getElementById("art-body");
   if (bodyEl) {
     bodyEl.innerHTML = enrichArticleContent(post.content || "");
@@ -1205,7 +1284,6 @@ function openArticle(postId) {
     });
   }
 
-  // الوسوم التفاعلية أسفل المقال
   const tagsEl = document.getElementById("art-tags");
   const rawTags = Array.isArray(post.tags) && post.tags.length ? post.tags : ["شبكة_البوصلة", compasses[0].replace(/\s+/g, "_")];
   if (tagsEl) {
@@ -1220,22 +1298,19 @@ function openArticle(postId) {
     });
   }
 
-  // تحديث الرابط المباشر وبيانات SEO و Open Graph
   const articleUrl = `${SITE_BASE_URL}/?post=${encodeURIComponent(post.id)}`;
   window.history.pushState({}, "", `?post=${encodeURIComponent(post.id)}`);
   updateSeoMeta({
     title: post.title,
     description: post.summary || post.title,
-    image: post.imageUrl,
+    image: post.imageUrl || getDefaultCoverImage(),
     url: articleUrl,
     type: "article",
     authorName: author.name
   });
 
-  // إعداد منظومة المشاركة الفائقة (مع الصورة والملخص والهاشتاجات)
   setupSuperShareButtons(post, rawTags, articleUrl);
 
-  // مقالات ذات صلة
   const relatedGrid = document.getElementById("related-grid");
   if (relatedGrid) {
     const related = state.posts
@@ -1253,17 +1328,17 @@ function openArticle(postId) {
 
 function setupSuperShareButtons(post, tagsList, articleUrl) {
   const hashtagsStr = tagsList.map((t) => `#${String(t).replace(/^#/, "").replace(/\s+/g, "_")}`).join(" ");
-  const summarySnippet = post.summary ? `\n\n📌 ${post.summary.slice(0, 160)}...` : "";
-  const fullShareText = `🧭 *${post.title}*${summarySnippet}\n\n${hashtagsStr}\n\n🔗 اقرأ التفاصيل عبر شبكة البوصلة:\n${articleUrl}`;
+  const summarySnippet = post.summary ? `\n\n${post.summary.slice(0, 160)}...` : "";
+  const fullShareText = `*${post.title}*${summarySnippet}\n\n${hashtagsStr}\n\nاقرأ التفاصيل عبر شبكة البوصلة:\n${articleUrl}`;
 
-  // 1. المشاركة الفورية الأصلية مع إرفاق صورة المقال (Web Share API Level 2)
   const nativeBtn = document.getElementById("share-native-btn");
   if (nativeBtn) {
     nativeBtn.onclick = async () => {
+      const shareImgUrl = post.imageUrl || getDefaultCoverImage();
       if (navigator.share) {
         try {
-          if (post.imageUrl && navigator.canShare) {
-            const response = await fetch(post.imageUrl);
+          if (shareImgUrl && navigator.canShare) {
+            const response = await fetch(shareImgUrl);
             const blob = await response.blob();
             const imageFile = new File([blob], "bawsala-news.jpg", { type: blob.type || "image/jpeg" });
             if (navigator.canShare({ files: [imageFile] })) {
@@ -1276,9 +1351,7 @@ function setupSuperShareButtons(post, tagsList, articleUrl) {
               return;
             }
           }
-        } catch (_) {
-          // في حال منع خادم الصورة (CORS) سحب الملف، نشارك النص والرابط المباشر فوراً
-        }
+        } catch (_) {}
 
         try {
           await navigator.share({ title: post.title, text: fullShareText, url: articleUrl });
@@ -1291,46 +1364,30 @@ function setupSuperShareButtons(post, tagsList, articleUrl) {
     };
   }
 
-  // 2. أزرار المنصات المباشرة
-  const waBtn = document.getElementById("share-wa");
-  if (waBtn) {
-    waBtn.onclick = () => {
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullShareText)}`, "_blank", "noopener");
-    };
-  }
+  document.getElementById("share-wa").onclick = () => {
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullShareText)}`, "_blank", "noopener");
+  };
 
-  const tgBtn = document.getElementById("share-tg");
-  if (tgBtn) {
-    tgBtn.onclick = () => {
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(articleUrl)}&text=${encodeURIComponent(`🧭 ${post.title}${summarySnippet}\n\n${hashtagsStr}`)}`, "_blank", "noopener");
-    };
-  }
+  document.getElementById("share-tg").onclick = () => {
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(articleUrl)}&text=${encodeURIComponent(`${post.title}${summarySnippet}\n\n${hashtagsStr}`)}`, "_blank", "noopener");
+  };
 
-  const xBtn = document.getElementById("share-x");
-  if (xBtn) {
-    xBtn.onclick = () => {
-      const tweetText = `🧭 ${post.title}\n${hashtagsStr}`;
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(articleUrl)}`, "_blank", "noopener");
-    };
-  }
+  document.getElementById("share-x").onclick = () => {
+    const tweetText = `${post.title}\n${hashtagsStr}`;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(articleUrl)}`, "_blank", "noopener");
+  };
 
-  const fbBtn = document.getElementById("share-fb");
-  if (fbBtn) {
-    fbBtn.onclick = () => {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`, "_blank", "noopener");
-    };
-  }
+  document.getElementById("share-fb").onclick = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`, "_blank", "noopener");
+  };
 
-  const copyBtn = document.getElementById("share-copy");
-  if (copyBtn) {
-    copyBtn.onclick = async () => {
-      await navigator.clipboard.writeText(fullShareText);
-      showToast("✅ تم نسخ الخبر مع الملخص والهاشتاجات والرابط!");
-    };
-  }
+  document.getElementById("share-copy").onclick = async () => {
+    await navigator.clipboard.writeText(fullShareText);
+    showToast("تم نسخ الخبر مع الملخص والهاشتاجات والرابط بنجاح");
+  };
 }
 
-// ==================== 16. الصفحات الثابتة (من نحن، الميثاق، الخصوصية) ====================
+// ==================== 17. الصفحات الثابتة ====================
 window.openStaticPage = function (pageType) {
   const titleEl = document.getElementById("static-page-title");
   const bodyEl = document.getElementById("static-page-body");
@@ -1358,7 +1415,7 @@ window.openStaticPage = function (pageType) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
-// ==================== 17. التنقل بين الواجهات والشريط السفلي ====================
+// ==================== 18. التنقل بين الواجهات والشريط السفلي ====================
 function switchView(viewName) {
   const views = {
     home: document.getElementById("view-home"),
@@ -1373,7 +1430,6 @@ function switchView(viewName) {
     if (el) el.classList.toggle("hidden", key !== viewName);
   });
 
-  // تحديث أزرار سطح المكتب والشريط السفلي
   document.querySelectorAll(".desk-nav-link").forEach((btn) => {
     btn.classList.toggle("active", btn.getAttribute("data-nav-target") === viewName);
   });
@@ -1391,60 +1447,6 @@ function closeSidebar() {
   document.getElementById("sidebar-backdrop")?.classList.add("hidden");
 }
 
-// ==================== 18. تقنية الإشعارات الفورية للمستخدمين ====================
-function initPushNotifications() {
-  const subBtn = document.getElementById("notify-subscribe-btn");
-  const modal = document.getElementById("push-permission-modal");
-  const acceptBtn = document.getElementById("accept-push-btn");
-  const declineBtn = document.getElementById("decline-push-btn");
-
-  if (subBtn) {
-    subBtn.addEventListener("click", () => {
-      if (!("Notification" in window)) {
-        showToast("متصفحك الحالي لا يدعم إشعارات الويب المباشرة");
-        return;
-      }
-      if (Notification.permission === "granted") {
-        showToast("🔔 إشعارات الأخبار العاجلة مفعلة لديك بالفعل");
-      } else {
-        modal?.classList.remove("hidden");
-      }
-    });
-  }
-
-  if (acceptBtn) {
-    acceptBtn.addEventListener("click", async () => {
-      modal?.classList.add("hidden");
-      if ("Notification" in window) {
-        const perm = await Notification.requestPermission();
-        if (perm === "granted") {
-          localStorage.setItem("bawsala_push_enabled", "1");
-          showToast("✅ تم تفعيل خدمة إشعارات الأخبار العاجلة بنجاح!");
-        }
-      }
-    });
-  }
-
-  if (declineBtn) {
-    declineBtn.addEventListener("click", () => modal?.classList.add("hidden"));
-  }
-}
-
-function triggerBrowserNotification(post) {
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
-  try {
-    const n = new Notification(`🔴 عاجل | ${state.settings.siteName}`, {
-      body: post.title,
-      icon: post.imageUrl || state.settings.logoUrl || "/logo.png"
-    });
-    n.onclick = () => {
-      window.focus();
-      openArticle(post.id);
-    };
-  } catch (_) {}
-}
-
-// ==================== 19. قراءة الروابط المخصصة عند فتح الموقع (URL Router) ====================
 function handleInitialRoute() {
   const params = new URLSearchParams(window.location.search);
   const postId = params.get("post");
@@ -1466,9 +1468,8 @@ function handleInitialRoute() {
   }
 }
 
-// ==================== 20. ربط الأحداث وتشغيل المزامنة الفورية مع Firestore ====================
+// ==================== 19. ربط الأحداث وتشغيل المزامنة الفورية ====================
 function bindUiEvents() {
-  // القائمة الجانبية
   document.getElementById("open-sidebar-btn")?.addEventListener("click", () => {
     document.getElementById("sidebar-drawer")?.classList.add("open");
     document.getElementById("sidebar-backdrop")?.classList.remove("hidden");
@@ -1476,38 +1477,63 @@ function bindUiEvents() {
   document.getElementById("close-sidebar-btn")?.addEventListener("click", closeSidebar);
   document.getElementById("sidebar-backdrop")?.addEventListener("click", closeSidebar);
 
-  // البحث الذكي في الترويسة
+  document.getElementById("side-nav-authors-btn")?.addEventListener("click", () => {
+    closeSidebar();
+    switchView("authors");
+  });
+  document.getElementById("side-nav-compasses-btn")?.addEventListener("click", () => {
+    closeSidebar();
+    switchView("compasses");
+  });
+
   const searchDrawer = document.getElementById("search-drawer");
   const searchInput = document.getElementById("global-search-input");
+
+  const openAndFocusSearch = () => {
+    searchDrawer?.classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => searchInput?.focus(), 120);
+  };
+
   document.getElementById("search-toggle-btn")?.addEventListener("click", () => {
     searchDrawer?.classList.toggle("hidden");
     if (!searchDrawer?.classList.contains("hidden")) searchInput?.focus();
   });
+
   document.getElementById("close-search-btn")?.addEventListener("click", () => {
     searchDrawer?.classList.add("hidden");
     if (searchInput) searchInput.value = "";
     state.searchQuery = "";
     renderHomeFeed();
   });
+
   searchInput?.addEventListener("input", (e) => {
     state.searchQuery = e.target.value.trim();
     switchView("home");
     renderHomeFeed();
   });
 
-  // البحث الذكي داخل قسم أقلام الصحيفة
   document.getElementById("authors-smart-search")?.addEventListener("input", (e) => {
     renderAuthorsDirectory(e.target.value);
   });
 
-  // أزرار التنقل السريع (سطح المكتب + الشريط السفلي)
+  document.getElementById("open-all-authors-btn")?.addEventListener("click", () => {
+    switchView("authors");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
   const handleNavAction = (action) => {
     if (action === "home") {
       selectCompass("all", "all");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (action === "compasses") {
       switchView("compasses");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (action === "authors") {
       switchView("authors");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (action === "search") {
+      openAndFocusSearch();
     } else if (action === "quick") {
       switchView("home");
       document.getElementById("quick-news-widget")?.scrollIntoView({ behavior: "smooth" });
@@ -1528,10 +1554,9 @@ function bindUiEvents() {
     window.history.pushState({}, "", "./");
     switchView("home");
   });
-  document.getElementById("author-back-btn")?.addEventListener("click", () => switchView("authors"));
+  document.getElementById("author-back-btn")?.addEventListener("click", () => switchView("home"));
   document.getElementById("static-back-btn")?.addEventListener("click", () => switchView("home"));
 
-  // أزرار التقليب في شريط العاجل
   document.getElementById("breaking-prev-btn")?.addEventListener("click", () => {
     state.breakingIndex = Math.max(0, state.breakingIndex - 1);
     renderBreakingAndQuickNews();
@@ -1543,7 +1568,6 @@ function bindUiEvents() {
 }
 
 function startRealtimeListeners() {
-  // 1. الإعدادات السيادية
   onSnapshot(doc(db, "settings", "general"), (snap) => {
     if (snap.exists()) {
       state.settings = { ...state.settings, ...snap.data() };
@@ -1551,11 +1575,9 @@ function startRealtimeListeners() {
     }
   });
 
-  // 2. البوصلات والأقسام
   onSnapshot(collection(db, "categories"), (snap) => {
     if (!snap.empty) {
       const dbCats = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      // دمج البوصلات المخصصة مع البوصلات الأساسية
       const merged = [...DEFAULT_COMPASSES];
       dbCats.forEach((cat) => {
         const idx = merged.findIndex((m) => m.id === cat.id || m.name === cat.name);
@@ -1568,13 +1590,11 @@ function startRealtimeListeners() {
     renderCompassesHub();
   });
 
-  // 3. الكادر الصحفي وأقلام الصحيفة
   onSnapshot(collection(db, "staff"), (snap) => {
     state.staff = snap.docs.map((d) => ({ id: d.id, email: d.id, ...d.data() }));
     renderHomeFeed();
   });
 
-  // 4. المقالات والأخبار العاجلة
   onSnapshot(collection(db, "posts"), (snap) => {
     state.posts = snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
@@ -1585,19 +1605,16 @@ function startRealtimeListeners() {
     handleInitialRoute();
   });
 
-  // 5. الرعايات والإعلانات الزجاجية
   onSnapshot(collection(db, "ads"), (snap) => {
     state.ads = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderAdsSlot();
   });
 }
 
-// تشغيل المنظومة
 document.addEventListener("DOMContentLoaded", () => {
   applySiteSettings();
   renderSidebarMenu();
   bindUiEvents();
-  initPushNotifications();
   initLiveWeatherTicker();
   startRealtimeListeners();
 });
