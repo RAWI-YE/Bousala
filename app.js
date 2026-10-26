@@ -13,28 +13,23 @@ import {
   increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ==================== 1. إعدادات الاتصال الثابتة بقاعدة البيانات ====================
-const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyD-RAWI-01-DEFAULT-KEY-REPLACE-IF-NEEDED",
+// ==================== 1. إعدادات الاتصال الرسمية بقاعدة بيانات Firebase ====================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAd4Df_Fpp2GlGkRPyvmKuFW68LbL_a4yU",
   authDomain: "rawi-01.firebaseapp.com",
+  databaseURL: "https://rawi-01-default-rtdb.firebaseio.com",
   projectId: "rawi-01",
-  storageBucket: "rawi-01.appspot.com",
-  messagingSenderId: "100000000000",
-  appId: "1:100000000000:web:rawi01bawsala"
+  storageBucket: "rawi-01.firebasestorage.app",
+  messagingSenderId: "91203142966",
+  appId: "1:91203142966:web:a44f7c06c98529a57a9f97",
+  measurementId: "G-2VNWNSZLBJ"
 };
 
-function resolveFirebaseConfig() {
-  try {
-    const saved = localStorage.getItem("bawsala_firebase_config") || localStorage.getItem("firebaseConfig");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.projectId) return parsed;
-    }
-  } catch (_) {}
-  return DEFAULT_FIREBASE_CONFIG;
-}
+try {
+  localStorage.setItem("bawsala_firebase_config", JSON.stringify(FIREBASE_CONFIG));
+} catch (_) {}
 
-const app = initializeApp(resolveFirebaseConfig());
+const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
 const SITE_BASE_URL = "https://networkbawsala.rawi-ye.com";
 
@@ -1032,7 +1027,6 @@ function renderHomeFeed() {
     }
   }
 
-  // الخبر الرئيسي البارز (Top Story)
   if (heroWrap) {
     const showHero = state.activeCompassId === "all" && !state.activeTag && !state.searchQuery && list.length > 0;
     if (!showHero) {
@@ -1072,7 +1066,6 @@ function renderHomeFeed() {
     }
   }
 
-  // شبكة المقالات الكلاسيكية
   if (!list.length) {
     grid.innerHTML = `<div class="skeleton-card" style="grid-column: 1 / -1;">لا توجد مواد منشورة تطابق هذا الاختيار حالياً.</div>`;
   } else {
@@ -1082,7 +1075,6 @@ function renderHomeFeed() {
     });
   }
 
-  // قائمة الأكثر قراءة (مرتبة حسب القراءة داخلياً بدون إظهار الرقم للجمهور)
   if (trendWrap) {
     const topPosts = [...state.posts.filter(isPostPublished)]
       .sort((a, b) => (b.views || 0) - (a.views || 0))
