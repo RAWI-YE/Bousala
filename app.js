@@ -1,6 +1,7 @@
 /* ==========================================================================
    شبكة البوصلة الإخبارية (networkbawsala.rawi-ye.com)
-   المحرك البرمجي الكلاسيكي المستقر — مؤسسة RAWI-YE.COM الإعلامية الرقمية
+   المحرك البرمجي الكلاسيكي المستقر (app.js) — الجزء الأول:
+   الاتصال الموثوق بقاعدة البيانات، الهوية، الفهرسة، شريط الأقسام، العواجل، والإعلانات
    ========================================================================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -8,6 +9,8 @@ import {
   getFirestore,
   collection,
   doc,
+  getDoc,
+  getDocs,
   onSnapshot,
   updateDoc,
   increment
@@ -25,7 +28,9 @@ const FIREBASE_CONFIG = {
   measurementId: "G-2VNWNSZLBJ"
 };
 
+// تنظيف أي إعدادات قديمة عالقة في المتصفح وتثبيت الإعدادات الحقيقية
 try {
+  localStorage.removeItem("firebaseConfig");
   localStorage.setItem("bawsala_firebase_config", JSON.stringify(FIREBASE_CONFIG));
 } catch (_) {}
 
@@ -175,7 +180,8 @@ const state = {
   activeTag: "",
   searchQuery: "",
   breakingIndex: 0,
-  breakingTimer: null
+  breakingTimer: null,
+  postsLoadedOnce: false
 };
 
 let initialRouteHandled = false;
@@ -183,7 +189,7 @@ let currentViewName = "home";
 let currentOpenPostId = null;
 const viewedPostsSession = new Set();
 
-// ==================== 5. الدوال المساعدة ومعالجة النصوص ====================
+// ==================== 5. الدوال المساعدة ومعالجة التواريخ والنصوص ====================
 function escapeHtml(str = "") {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -202,9 +208,16 @@ function showToast(msg) {
 }
 
 function formatArabicDate(timestamp) {
-  if (!timestamp) return "الآن";
-  const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  if (isNaN(d.getTime())) return "حديثاً";
+  if (!timestamp) return "حديثاً";
+  let d = null;
+  if (typeof timestamp.toDate === "function") {
+    d = timestamp.toDate();
+  } else if (timestamp.seconds) {
+    d = new Date(timestamp.seconds * 1000);
+  } else {
+    d = new Date(timestamp);
+  }
+  if (!d || isNaN(d.getTime())) return "حديثاً";
   return d.toLocaleDateString("ar-YE", {
     year: "numeric",
     month: "short",
@@ -215,16 +228,22 @@ function formatArabicDate(timestamp) {
 }
 
 function getPostTimestampMs(post) {
-  if (!post || !post.createdAt) return 0;
-  if (typeof post.createdAt.toMillis === "function") return post.createdAt.toMillis();
-  if (post.createdAt.seconds) return post.createdAt.seconds * 1000;
-  const parsed = new Date(post.createdAt).getTime();
+  if (!post) return 0;
+  const t = post.createdAt || post.updatedAt || post.date || post.timestamp;
+  if (!t) return 0;
+  if (typeof t.toMillis === "function") return t.toMillis();
+  if (typeof t.seconds === "number") return t.seconds * 1000;
+  if (typeof t === "number") return t;
+  const parsed = new Date(t).getTime();
   return isNaN(parsed) ? 0 : parsed;
 }
 
+// فحص مرن ودقيق لحالة نشر المقال (يستبعد فقط المسودات والمقالات قيد المراجعة)
 function isPostPublished(post) {
   if (!post) return false;
-  if (post.status === "draft" || post.status === "review" || post.status === "pending" || post.status === "rejected") {
+  if (post.draft === true || post.isDraft === true || post.hidden === true) return false;
+  const st = String(post.status || "published").trim().toLowerCase();
+  if (st === "draft" || st === "review" || st === "pending" || st === "rejected" || st === "archived") {
     return false;
   }
   return true;
@@ -234,8 +253,11 @@ function isBreakingStillActive(post) {
   if (!post || !post.isBreaking) return false;
   const now = Date.now();
   if (post.breakingExpiresAt) {
-    const exp = typeof post.breakingExpiresAt === "number" ? post.breakingExpiresAt : new Date(post.breakingExpiresAt).getTime();
-    if (exp && now > exp) return false;
+    const exp =
+      typeof post.breakingExpiresAt === "number"
+        ? post.breakingExpiresAt
+        : new Date(post.breakingExpiresAt).getTime();
+    if (exp && !isNaN(exp) && now > exp) return false;
   } else if (post.breakingDurationHours) {
     const createdMs = getPostTimestampMs(post);
     const durationMs = Number(post.breakingDurationHours) * 3600 * 1000;
@@ -247,10 +269,15 @@ function isBreakingStillActive(post) {
 function getPostCompasses(post) {
   const list = [];
   if (Array.isArray(post.categories)) {
-    list.push(...post.categories);
+    post.categories.forEach((c) => {
+      if (c && !list.includes(c)) list.push(c);
+    });
   }
   if (post.category && !list.includes(post.category)) {
     list.push(post.category);
+  }
+  if (post.compass && !list.includes(post.compass)) {
+    list.push(post.compass);
   }
   if (post.compassId && !list.includes(post.compassId)) {
     list.push(post.compassId);
@@ -391,7 +418,10 @@ function applySiteSettings() {
   setTxt("ui-site-name", siteName);
   setTxt("sidebar-site-title", siteName);
   setTxt("footer-site-name", siteName);
-  setTxt("footer-site-desc", s.siteDescription || "منصة إخبارية وتحليلية شاملة تندرج تحت مظلة مؤسسة RAWI-YE.COM الإعلامية الرقمية");
+  setTxt(
+    "footer-site-desc",
+    s.siteDescription || "منصة إخبارية وتحليلية شاملة تندرج تحت مظلة مؤسسة RAWI-YE.COM الإعلامية الرقمية"
+  );
 
   if (s.accentColor && state.activeCompassId === "all") {
     document.documentElement.style.setProperty("--accent", s.accentColor);
@@ -490,7 +520,9 @@ function renderTopCategoriesBar() {
   const compasses = getVisibleCompasses();
   topList.innerHTML = [
     `<li>
-      <button type="button" class="cat-nav-item ${state.activeCompassId === "all" && currentViewName === "home" ? "active" : ""}" data-compass-nav="all">الرئيسية</button>
+      <button type="button" class="cat-nav-item ${
+        state.activeCompassId === "all" && currentViewName === "home" ? "active" : ""
+      }" data-compass-nav="all">الرئيسية</button>
     </li>`,
     ...compasses.map(
       (c) => `
@@ -567,12 +599,16 @@ function renderCompassesHub() {
 
       const subs = Array.isArray(comp.subcategories) ? comp.subcategories : [];
       return `
-        <article class="compass-hub-card" data-compass-id="${escapeHtml(comp.id)}" style="border-top: 4px solid ${comp.color || "#b91c1c"};">
+        <article class="compass-hub-card" data-compass-id="${escapeHtml(comp.id)}" style="border-top: 4px solid ${
+        comp.color || "#b91c1c"
+      };">
           <div class="compass-card-top">
             ${
               comp.flagUrl
                 ? `<img src="${escapeHtml(comp.flagUrl)}" alt="${escapeHtml(comp.name)}" class="compass-flag-img">`
-                : `<div class="compass-icon-box" style="color:${comp.color || "#b91c1c"};"><span class="material-symbols-rounded" translate="no">${comp.icon || "explore"}</span></div>`
+                : `<div class="compass-icon-box" style="color:${
+                    comp.color || "#b91c1c"
+                  };"><span class="material-symbols-rounded" translate="no">${comp.icon || "explore"}</span></div>`
             }
             <div>
               <h3 style="font-size:1.08rem;font-weight:900;">${escapeHtml(comp.name)}</h3>
@@ -583,7 +619,10 @@ function renderCompassesHub() {
           ${
             subs.length
               ? `<div class="compass-card-subs">${subs
-                  .map((s) => `<span class="sub-pill" style="font-size:0.74rem;padding:3px 10px;">${escapeHtml(s)}</span>`)
+                  .map(
+                    (s) =>
+                      `<span class="sub-pill" style="font-size:0.74rem;padding:3px 10px;">${escapeHtml(s)}</span>`
+                  )
                   .join("")}</div>`
               : ""
           }
@@ -654,10 +693,14 @@ function selectCompass(compassIdentifier, subcategory = "all", pushHistory = tru
     if (subs.length > 0 && subsBar) {
       subsBar.classList.remove("hidden");
       subsBar.innerHTML = [
-        `<button type="button" class="sub-pill ${state.activeSubcategory === "all" ? "active" : ""}" data-sub="all">كل فئات ${escapeHtml(comp.name)}</button>`,
+        `<button type="button" class="sub-pill ${
+          state.activeSubcategory === "all" ? "active" : ""
+        }" data-sub="all">كل فئات ${escapeHtml(comp.name)}</button>`,
         ...subs.map(
           (sub) =>
-            `<button type="button" class="sub-pill ${state.activeSubcategory === sub ? "active" : ""}" data-sub="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`
+            `<button type="button" class="sub-pill ${
+              state.activeSubcategory === sub ? "active" : ""
+            }" data-sub="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`
         )
       ].join("");
 
@@ -814,10 +857,14 @@ function buildAdHtml(ad) {
   if (ad.styleType === "leaderboard" && ad.imageUrl) {
     return `
       <div class="leaderboard-ad-banner" data-ad-box="${escapeHtml(ad.id)}">
-        <button type="button" class="glass-ad-close leaderboard-close-float" data-close-ad="${escapeHtml(ad.id)}" title="إخفاء الإعلان">
+        <button type="button" class="glass-ad-close leaderboard-close-float" data-close-ad="${escapeHtml(
+          ad.id
+        )}" title="إخفاء الإعلان">
           <span class="material-symbols-rounded" translate="no" style="font-size:16px;">close</span>
         </button>
-        <a href="${escapeHtml(ad.targetUrl || "#")}" target="_blank" rel="noopener noreferrer" class="leaderboard-ad-link" data-click-ad="${escapeHtml(ad.id)}">
+        <a href="${escapeHtml(
+          ad.targetUrl || "#"
+        )}" target="_blank" rel="noopener noreferrer" class="leaderboard-ad-link" data-click-ad="${escapeHtml(ad.id)}">
           <img src="${escapeHtml(ad.imageUrl)}" alt="${escapeHtml(ad.title)}" class="leaderboard-ad-img" loading="lazy">
           <div class="leaderboard-ad-bar">
             <span><span class="glass-ad-tag">رعاية رسمية</span> ${escapeHtml(ad.title)}</span>
@@ -833,8 +880,14 @@ function buildAdHtml(ad) {
 
   return `
     <div class="glass-ad-banner" data-ad-box="${escapeHtml(ad.id)}">
-      <a href="${escapeHtml(ad.targetUrl || "#")}" target="_blank" rel="noopener noreferrer" class="glass-ad-clickable" data-click-ad="${escapeHtml(ad.id)}">
-        ${ad.imageUrl ? `<img src="${escapeHtml(ad.imageUrl)}" alt="${escapeHtml(ad.title)}" class="glass-ad-thumb" loading="lazy">` : ""}
+      <a href="${escapeHtml(
+        ad.targetUrl || "#"
+      )}" target="_blank" rel="noopener noreferrer" class="glass-ad-clickable" data-click-ad="${escapeHtml(ad.id)}">
+        ${
+          ad.imageUrl
+            ? `<img src="${escapeHtml(ad.imageUrl)}" alt="${escapeHtml(ad.title)}" class="glass-ad-thumb" loading="lazy">`
+            : ""
+        }
         <div>
           <span class="glass-ad-tag">مادة إعلانية</span>
           <h4 class="glass-ad-title">${escapeHtml(ad.title)}</h4>
@@ -866,6 +919,13 @@ function bindAdEvents(container, adId) {
     });
   }
 }
+
+// ------------------- نهاية الجزء الأول من محرك الموقع العام -------------------
+/* ==========================================================================
+   شبكة البوصلة الإخبارية (networkbawsala.rawi-ye.com)
+   المحرك البرمجي الكلاسيكي المستقر (app.js) — الجزء الثاني والأخير:
+   عرض الأخبار، الكتّاب، قارئ المقال، المشاركة الفائقة، والجلب المزدوج من قاعدة البيانات
+   ========================================================================== */
 
 // ==================== 11. إدارة الكتّاب وشريط أقلام الصحيفة ====================
 function findAuthorInfo(post) {
@@ -1027,6 +1087,7 @@ function renderHomeFeed() {
     }
   }
 
+  // الخبر الرئيسي البارز (Top Story)
   if (heroWrap) {
     const showHero = state.activeCompassId === "all" && !state.activeTag && !state.searchQuery && list.length > 0;
     if (!showHero) {
@@ -1066,8 +1127,13 @@ function renderHomeFeed() {
     }
   }
 
+  // شبكة المقالات الكلاسيكية
   if (!list.length) {
-    grid.innerHTML = `<div class="skeleton-card" style="grid-column: 1 / -1;">لا توجد مواد منشورة تطابق هذا الاختيار حالياً.</div>`;
+    if (!state.postsLoadedOnce) {
+      grid.innerHTML = `<div class="skeleton-card" style="grid-column: 1 / -1;">جاري الاتصال بقاعدة البيانات وتحميل المواد الصحفية...</div>`;
+    } else {
+      grid.innerHTML = `<div class="skeleton-card" style="grid-column: 1 / -1;">لا توجد مواد منشورة تطابق هذا الاختيار حالياً.</div>`;
+    }
   } else {
     grid.innerHTML = list.map((post) => buildNewsCardHtml(post)).join("");
     grid.querySelectorAll("[data-open-post]").forEach((card) => {
@@ -1075,25 +1141,30 @@ function renderHomeFeed() {
     });
   }
 
+  // قائمة الأكثر قراءة
   if (trendWrap) {
     const topPosts = [...state.posts.filter(isPostPublished)]
       .sort((a, b) => (b.views || 0) - (a.views || 0))
       .slice(0, 5);
 
-    trendWrap.innerHTML = topPosts
-      .map(
-        (p, idx) => `
-        <div class="trend-item" data-open-post="${escapeHtml(p.id)}">
-          <span class="trend-rank">${idx + 1}</span>
-          <h4 class="trend-title">${escapeHtml(p.title)}</h4>
-        </div>
-      `
-      )
-      .join("");
+    if (!topPosts.length) {
+      trendWrap.innerHTML = `<div class="empty-hint" style="padding:12px;">لا توجد بيانات حالياً.</div>`;
+    } else {
+      trendWrap.innerHTML = topPosts
+        .map(
+          (p, idx) => `
+          <div class="trend-item" data-open-post="${escapeHtml(p.id)}">
+            <span class="trend-rank">${idx + 1}</span>
+            <h4 class="trend-title">${escapeHtml(p.title)}</h4>
+          </div>
+        `
+        )
+        .join("");
 
-    trendWrap.querySelectorAll("[data-open-post]").forEach((item) => {
-      item.addEventListener("click", () => openArticle(item.getAttribute("data-open-post"), true));
-    });
+      trendWrap.querySelectorAll("[data-open-post]").forEach((item) => {
+        item.addEventListener("click", () => openArticle(item.getAttribute("data-open-post"), true));
+      });
+    }
   }
 }
 
@@ -1559,7 +1630,7 @@ function resolveRouteFromUrl(pushHistory = false) {
   }
 }
 
-// ==================== 17. ربط الأحداث والمزامنة المستقرة ====================
+// ==================== 17. ربط الأحداث + الجلب المباشر والمزامنة الفورية ====================
 function bindUiEvents() {
   document.getElementById("open-sidebar-btn")?.addEventListener("click", () => {
     document.getElementById("sidebar-drawer")?.classList.add("open");
@@ -1661,6 +1732,54 @@ function bindUiEvents() {
   });
 }
 
+// معالجة وتطبيق قائمة المنشورات فور وصولها
+function processIncomingPostsDocs(docsArray) {
+  state.postsLoadedOnce = true;
+  state.posts = docsArray
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => getPostTimestampMs(b) - getPostTimestampMs(a));
+
+  renderBreakingAndQuickNews();
+
+  // إذا كان القارئ يقرأ مقالاً مفتوحاً حالياً لا نقاطع قراءته، بل نحدث الرئيسية فقط
+  if (currentViewName === "home") {
+    renderHomeFeed();
+  }
+
+  if (!initialRouteHandled) {
+    initialRouteHandled = true;
+    resolveRouteFromUrl(false);
+  }
+}
+
+// الجلب المباشر السريع عند الإقلاع (يضمن التحميل حتى لو تأخر اتصال WebSocket)
+async function loadInitialDataDirectly() {
+  try {
+    const postsSnap = await getDocs(collection(db, "posts"));
+    if (postsSnap && !state.postsLoadedOnce) {
+      processIncomingPostsDocs(postsSnap.docs);
+    }
+  } catch (err) {
+    console.warn("Direct posts fetch notice:", err);
+  }
+
+  try {
+    const setSnap = await getDoc(doc(db, "settings", "general"));
+    if (setSnap.exists()) {
+      state.settings = { ...state.settings, ...setSnap.data() };
+      applySiteSettings();
+    }
+  } catch (_) {}
+
+  try {
+    const staffSnap = await getDocs(collection(db, "staff"));
+    if (!staffSnap.empty) {
+      state.staff = staffSnap.docs.map((d) => ({ id: d.id, email: d.id, ...d.data() }));
+      if (currentViewName === "home") renderHomeFeed();
+    }
+  } catch (_) {}
+}
+
 function startRealtimeListeners() {
   onSnapshot(
     doc(db, "settings", "general"),
@@ -1697,7 +1816,7 @@ function startRealtimeListeners() {
     collection(db, "staff"),
     (snap) => {
       state.staff = snap.docs.map((d) => ({ id: d.id, email: d.id, ...d.data() }));
-      renderHomeFeed();
+      if (currentViewName === "home") renderHomeFeed();
     },
     (err) => console.warn("Staff sync warning:", err)
   );
@@ -1705,19 +1824,13 @@ function startRealtimeListeners() {
   onSnapshot(
     collection(db, "posts"),
     (snap) => {
-      state.posts = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => getPostTimestampMs(b) - getPostTimestampMs(a));
-
-      renderBreakingAndQuickNews();
-      renderHomeFeed();
-
-      if (!initialRouteHandled) {
-        initialRouteHandled = true;
-        resolveRouteFromUrl(false);
-      }
+      processIncomingPostsDocs(snap.docs);
     },
-    (err) => console.warn("Posts sync warning:", err)
+    (err) => {
+      console.error("Posts sync error:", err);
+      state.postsLoadedOnce = true;
+      renderHomeFeed();
+    }
   );
 
   onSnapshot(
@@ -1736,5 +1849,8 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTopCategoriesBar();
   renderSidebarMenu();
   bindUiEvents();
+
+  // تشغيل الجلب المباشر والمزامنة الحية معاً لضمان أقصى سرعة وثبات
+  loadInitialDataDirectly();
   startRealtimeListeners();
 });
